@@ -2,12 +2,24 @@ name: Deploy to Xserver
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: xserver-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+    env:
+      SSH_PORT: '10022'
+      GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
+      GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
     steps:
       - uses: actions/checkout@v4
 
@@ -15,21 +27,84 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm ci
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Build
         run: npm run build
 
-      - name: Deploy to Xserver via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          username: ${{ secrets.SSH_USERNAME }}
-          server: ${{ secrets.SSH_HOST }}
-          port: 10022
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          local_path: './public/*'
-          remote_path: '/home/xs501620/juku-map.jp/public_html/'
-          sftp_only: false
-          delete_remote_files: false
+      - name: Validate deployment settings
+        shell: bash
+        run: |
+          [[ "$GA_MEASUREMENT_ID" =~ ^G-[A-Z0-9]+$ ]] || {
+            echo "::error::GA_MEASUREMENT_ID must be a valid GA4 measurement ID."
+            exit 1
+          }
+          if [[ -n "$GOOGLE_SITE_VERIFICATION" ]] &&
+             [[ ! "$GOOGLE_SITE_VERIFICATION" =~ ^[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::GOOGLE_SITE_VERIFICATION contains unsupported characters."
+            exit 1
+          fi
+
+      - name: Package application
+        shell: bash
+        run: |
+          tar \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='storage' \
+            --exclude='tests' \
+            -czf "$RUNNER_TEMP/release.tar.gz" .
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release without deleting remote files
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: |
+          SSH_TARGET="$SSH_USERNAME@$SSH_HOST"
+          SSH_ARGS=(-i ~/.ssh/deploy_key -p "$SSH_PORT")
+          ssh "${SSH_ARGS[@]}" "$SSH_TARGET" 'mkdir -p juku-map-app/uploads'
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" \
+            "$RUNNER_TEMP/release.tar.gz" \
+            "$SSH_TARGET:juku-map-app/uploads/release-$GITHUB_SHA.tar.gz"
+
+      - name: Activate release
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+        run: |
+          SSH_TARGET="$SSH_USERNAME@$SSH_HOST"
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_TARGET" \
+            "bash -s -- '$GITHUB_SHA' '$GA_MEASUREMENT_ID' '$GOOGLE_SITE_VERIFICATION'" \
+            < .github/scripts/deploy-xserver.sh
+
+      - name: Verify public site
+        shell: bash
+        run: |
+          for attempt in {1..6}; do
+            response="$(curl --fail --silent --show-error https://juku-map.jp/)" || true
+            if grep -Fq "gtag/js?id=$GA_MEASUREMENT_ID" <<< "$response"; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::The public site did not return the deployed GA4 tag."
+          exit 1

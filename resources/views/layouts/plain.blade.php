@@ -26,6 +26,8 @@
 
   <link rel="icon" href="/favicon.ico" sizes="any">
 
+  @include('partials.google')
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <style>
     body { background-color: #f5f8f9; font-family: system-ui, -apple-system, sans-serif; }

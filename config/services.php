@@ -43,4 +43,9 @@ return [
         'messaging_channel_secret' => env('LINE_MESSAGING_CHANNEL_SECRET'),
     ],
 
+    'google' => [
+        'analytics_measurement_id' => env('GA_MEASUREMENT_ID'),
+        'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+    ],
+
 ];
