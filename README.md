@@ -16,12 +16,14 @@ entries that would be overwritten are copied once to
 `~/juku-map-app/backups/public-html-before-laravel`, and releases are retained.
 
 The workflow requires the repository secrets `SSH_HOST`, `SSH_USERNAME`, and
-`SSH_PRIVATE_KEY`, plus the repository variable `GA_MEASUREMENT_ID`. To verify a
-Google Search Console URL-prefix property with an HTML tag, add the token from the
-tag's `content` attribute as the optional `GOOGLE_SITE_VERIFICATION` repository
-variable, redeploy, and then click **Verify** in Search Console. A DNS-domain
-property can instead be verified by adding Google's TXT record at the DNS provider
-and does not require a repository change.
+`SSH_PRIVATE_KEY`, plus the repository variables `GA_MEASUREMENT_ID` and
+`SSH_HOST_KEY_SHA256`. The SSH fingerprint must be verified out of band before it
+is registered, and the workflow rejects a changed server key. To verify a Google
+Search Console URL-prefix property with an HTML tag, add the token from the tag's
+`content` attribute as the optional `GOOGLE_SITE_VERIFICATION` repository variable,
+redeploy, and then click **Verify** in Search Console. A DNS-domain property can
+instead be verified by adding Google's TXT record at the DNS provider and does not
+require a repository change.
 
 Before deployment, `juku-map.jp` must be added to the Xserver account identified
 by `SSH_HOST`, its A record must resolve to that server, and free SSL must be

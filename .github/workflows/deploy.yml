@@ -20,6 +20,7 @@ jobs:
       SSH_PORT: '10022'
       GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
       GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+      SSH_HOST_KEY_SHA256: ${{ vars.SSH_HOST_KEY_SHA256 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -51,11 +52,14 @@ jobs:
             echo "::error::GOOGLE_SITE_VERIFICATION contains unsupported characters."
             exit 1
           fi
+          [[ "$SSH_HOST_KEY_SHA256" =~ ^SHA256:[A-Za-z0-9+/]{43}$ ]] || {
+            echo "::error::SSH_HOST_KEY_SHA256 must contain the verified SSH host fingerprint."
+            exit 1
+          }
 
-          mapfile -t domain_ips < <(getent ahostsv4 juku-map.jp | awk '{print $1}' | sort -u)
-          mapfile -t ssh_ips < <(getent ahostsv4 "$SSH_HOST" | awk '{print $1}' | sort -u)
-          if ! printf '%s\n' "${domain_ips[@]}" |
-               grep -Fqx -f <(printf '%s\n' "${ssh_ips[@]}"); then
+          domain_ips="$(getent ahostsv4 juku-map.jp | awk '{print $1}' | sort -u)"
+          ssh_ips="$(getent ahostsv4 "$SSH_HOST" | awk '{print $1}' | sort -u)"
+          if [[ -z "$domain_ips" || -z "$ssh_ips" || "$domain_ips" != "$ssh_ips" ]]; then
             echo "::error::juku-map.jp does not resolve to the configured SSH_HOST."
             exit 1
           fi
@@ -80,7 +84,16 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "$SSH_PORT" -t ecdsa "$SSH_HOST" > ~/.ssh/scanned_host_key
+          scanned_fingerprint="$(
+            ssh-keygen -lf ~/.ssh/scanned_host_key -E sha256 |
+            awk 'NR == 1 { print $2 }'
+          )"
+          if [[ "$scanned_fingerprint" != "$SSH_HOST_KEY_SHA256" ]]; then
+            echo "::error::The Xserver SSH host key does not match the pinned fingerprint."
+            exit 1
+          fi
+          mv ~/.ssh/scanned_host_key ~/.ssh/known_hosts
 
       - name: Upload release without deleting remote files
         shell: bash

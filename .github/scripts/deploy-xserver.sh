@@ -123,9 +123,18 @@ next_link="$app_root/current-$release_sha"
 if [ ! -L "$next_link" ]; then
     ln -s "$release_dir" "$next_link"
 fi
-mv -Tf "$next_link" "$app_root/current"
 
-cp -a "$release_dir/public/." "$public_root/"
+for source in "$release_dir"/public/* "$release_dir"/public/.[!.]*; do
+    [ -e "$source" ] || continue
+    if [ "$(basename "$source")" != "index.php" ]; then
+        cp -a "$source" "$public_root/"
+    fi
+done
+
+mv -Tf "$next_link" "$app_root/current"
+cp "$release_dir/public/index.php" "$public_root/index.php.next"
+mv -f "$public_root/index.php.next" "$public_root/index.php"
+
 if [ ! -e "$public_root/storage" ] && [ ! -L "$public_root/storage" ]; then
     ln -s "$shared_dir/storage/app/public" "$public_root/storage"
 fi
