@@ -111,6 +111,14 @@ if [ ! -f "$backup_root/.complete" ]; then
     touch "$backup_root/.complete"
 fi
 
+for blocking_index in index.html index.htm; do
+    if [ -f "$public_root/$blocking_index" ]; then
+        mv \
+            "$public_root/$blocking_index" \
+            "$backup_root/$blocking_index.$release_sha"
+    fi
+done
+
 next_link="$app_root/current-$release_sha"
 if [ ! -L "$next_link" ]; then
     ln -s "$release_dir" "$next_link"
