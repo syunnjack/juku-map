@@ -7,6 +7,29 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Production deployment
+
+Merges to `main` deploy the application to Xserver over SSH. Application code and
+persistent data stay outside the document root in `~/juku-map-app`; only Laravel's
+`public` directory is copied to `~/juku-map.jp/public_html`. Existing document-root
+entries that would be overwritten are copied once to
+`~/juku-map-app/backups/public-html-before-laravel`, and releases are retained.
+
+The workflow requires the repository secrets `SSH_HOST`, `SSH_USERNAME`, and
+`SSH_PRIVATE_KEY`, plus the repository variables `GA_MEASUREMENT_ID` and
+`SSH_HOST_KEY_SHA256`. The SSH fingerprint must be verified out of band before it
+is registered, and the workflow rejects a changed server key. To verify a Google
+Search Console URL-prefix property with an HTML tag, add the token from the tag's
+`content` attribute as the optional `GOOGLE_SITE_VERIFICATION` repository variable,
+redeploy, and then click **Verify** in Search Console. A DNS-domain property can
+instead be verified by adding Google's TXT record at the DNS provider and does not
+require a repository change.
+
+Before deployment, `juku-map.jp` must be added to the Xserver account identified
+by `SSH_HOST`, its A record must resolve to that server, and free SSL must be
+enabled for the domain in the Xserver panel. The workflow rejects a deployment
+when the domain and SSH host resolve to different IPv4 addresses.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
