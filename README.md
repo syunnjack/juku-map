@@ -23,6 +23,11 @@ variable, redeploy, and then click **Verify** in Search Console. A DNS-domain
 property can instead be verified by adding Google's TXT record at the DNS provider
 and does not require a repository change.
 
+Before deployment, `juku-map.jp` must be added to the Xserver account identified
+by `SSH_HOST`, its A record must resolve to that server, and free SSL must be
+enabled for the domain in the Xserver panel. The workflow rejects a deployment
+when the domain and SSH host resolve to different IPv4 addresses.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

@@ -37,8 +37,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Validate deployment settings
+      - name: Validate deployment settings and routing
         shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           [[ "$GA_MEASUREMENT_ID" =~ ^G-[A-Z0-9]+$ ]] || {
             echo "::error::GA_MEASUREMENT_ID must be a valid GA4 measurement ID."
@@ -47,6 +49,14 @@ jobs:
           if [[ -n "$GOOGLE_SITE_VERIFICATION" ]] &&
              [[ ! "$GOOGLE_SITE_VERIFICATION" =~ ^[A-Za-z0-9_-]+$ ]]; then
             echo "::error::GOOGLE_SITE_VERIFICATION contains unsupported characters."
+            exit 1
+          fi
+
+          mapfile -t domain_ips < <(getent ahostsv4 juku-map.jp | awk '{print $1}' | sort -u)
+          mapfile -t ssh_ips < <(getent ahostsv4 "$SSH_HOST" | awk '{print $1}' | sort -u)
+          if ! printf '%s\n' "${domain_ips[@]}" |
+               grep -Fqx -f <(printf '%s\n' "${ssh_ips[@]}"); then
+            echo "::error::juku-map.jp does not resolve to the configured SSH_HOST."
             exit 1
           fi
 
