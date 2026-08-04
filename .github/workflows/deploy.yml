@@ -31,5 +31,5 @@ jobs:
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           local_path: './public/*'
           remote_path: '/home/xs501620/juku-map.jp/public_html/'
-          sftp_only: true
+          sftp_only: false
           delete_remote_files: false
