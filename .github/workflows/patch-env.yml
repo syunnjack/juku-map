@@ -83,3 +83,31 @@ jobs:
             grep -E '^GA_MEASUREMENT_ID=|^GOOGLE_SITE_VERIFICATION=' shared/.env 2>/dev/null || echo "no shared/.env or no matching lines"
             echo "--- current/.env GA lines (if present, may just be a symlink to shared) ---"
             grep -E '^GA_MEASUREMENT_ID=|^GOOGLE_SITE_VERIFICATION=' current/.env 2>/dev/null || echo "no current/.env or no matching lines"
+
+  fix-real-env:
+    runs-on: ubuntu-latest
+    needs: inspect-app-dir
+    if: always()
+    steps:
+      - name: Set GOOGLE_SITE_VERIFICATION in shared/.env and clear config cache
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: 10022
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/xs501620/juku-map-app/shared
+            test -f .env
+            cp .env .env.bak.$(date +%Y%m%d%H%M%S)
+            grep -q '^GA_MEASUREMENT_ID=' .env \
+              && sed -i 's/^GA_MEASUREMENT_ID=.*/GA_MEASUREMENT_ID=G-P4QF8RP681/' .env \
+              || echo 'GA_MEASUREMENT_ID=G-P4QF8RP681' >> .env
+            grep -q '^GOOGLE_SITE_VERIFICATION=' .env \
+              && sed -i 's/^GOOGLE_SITE_VERIFICATION=.*/GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI/' .env \
+              || echo 'GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI' >> .env
+            cd /home/xs501620/juku-map-app/current
+            /usr/bin/php8.3 artisan config:clear
+            /usr/bin/php8.3 artisan config:cache || true
+            echo "Done."
