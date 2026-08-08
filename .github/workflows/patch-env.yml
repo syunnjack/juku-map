@@ -126,9 +126,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            echo "--- find wp-config.php under juku-map.jp ---"
-            find /home/xs501620/juku-map.jp -maxdepth 3 -iname "wp-config.php" 2>/dev/null || echo "not found"
-            WPROOT=$(dirname "$(find /home/xs501620/juku-map.jp -maxdepth 3 -iname "wp-config.php" 2>/dev/null | head -1)")
+            echo "--- find wp-config.php under home dir (broad) ---"
+            find /home/xs501620 -maxdepth 4 -iname "wp-config.php" -not -path "*/vendor/*" 2>/dev/null || echo "not found"
+            CANDIDATE=$(find /home/xs501620 -maxdepth 4 -iname "wp-config.php" -not -path "*/vendor/*" 2>/dev/null | grep -i juku | head -1)
+            if [ -z "$CANDIDATE" ]; then
+              CANDIDATE=$(find /home/xs501620 -maxdepth 4 -iname "wp-config.php" -not -path "*/vendor/*" 2>/dev/null | head -1)
+            fi
+            WPROOT=$(dirname "$CANDIDATE" 2>/dev/null || echo "")
             echo "WPROOT=$WPROOT"
             echo "--- wp-cli available? ---"
             (which wp || ls /home/xs501620/.wp-cli 2>/dev/null || echo "wp-cli not found in PATH") 2>&1
