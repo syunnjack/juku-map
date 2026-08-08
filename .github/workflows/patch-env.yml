@@ -27,3 +27,26 @@ jobs:
               || echo 'GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI' >> .env
             /usr/bin/php8.3 artisan config:clear
             echo "Done."
+
+  inspect:
+    runs-on: ubuntu-latest
+    needs: patch
+    steps:
+      - name: Inspect live server state (no secrets printed)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: 10022
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/xs501620/juku-map.jp
+            echo "--- .env GA/GSC lines ---"
+            grep -E '^GA_MEASUREMENT_ID=|^GOOGLE_SITE_VERIFICATION=' .env || echo "not set"
+            echo "--- find artisan ---"
+            find . -maxdepth 2 -iname "artisan" 2>/dev/null || echo "artisan not found within 2 levels"
+            echo "--- blade layout files on server ---"
+            find . -path ./vendor -prune -o -iname "*.blade.php" -print 2>/dev/null
+            echo "--- grep gtag/GA in blade files ---"
+            grep -rl "gtag\|G-" --include="*.blade.php" resources/views 2>/dev/null || echo "no matches"
