@@ -25,12 +25,13 @@ jobs:
             grep -q '^GOOGLE_SITE_VERIFICATION=' .env \
               && sed -i 's/^GOOGLE_SITE_VERIFICATION=.*/GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI/' .env \
               || echo 'GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI' >> .env
-            /usr/bin/php8.3 artisan config:clear
+            /usr/bin/php8.3 artisan config:clear || echo "config:clear skipped (artisan not found here)"
             echo "Done."
 
   inspect:
     runs-on: ubuntu-latest
     needs: patch
+    if: always()
     steps:
       - name: Inspect live server state (no secrets printed)
         uses: appleboy/ssh-action@v1.0.3
