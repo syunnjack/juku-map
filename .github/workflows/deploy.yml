@@ -11,25 +11,74 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          extensions: sqlite3, pdo_sqlite
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
 
-      - name: Build
-        run: npm run build
+      - name: Write production .env
+        run: |
+          cat > .env <<EOF
+          APP_NAME="学習塾マップ"
+          APP_ENV=production
+          APP_KEY=${{ secrets.APP_KEY }}
+          APP_DEBUG=false
+          APP_URL=https://juku-map.jp
+          APP_LOCALE=ja
+          APP_FALLBACK_LOCALE=ja
+          DB_CONNECTION=sqlite
+          LOG_CHANNEL=stack
+          LOG_LEVEL=error
+          CACHE_STORE=file
+          SESSION_DRIVER=file
+          QUEUE_CONNECTION=sync
+          GA_MEASUREMENT_ID=G-P4QF8RP681
+          GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI
+          EOF
 
-      - name: Deploy to Xserver via SFTP
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+      - name: Deploy app via rsync over SSH
+        uses: burnett01/rsync-deployments@7.0.1
         with:
-          username: ${{ secrets.SSH_USERNAME }}
-          server: ${{ secrets.SSH_HOST }}
+          switches: -avzr --delete --exclude=".git" --exclude=".github" --exclude="node_modules" --exclude="tests" --exclude="database/database.sqlite" --exclude="storage/app" --exclude="storage/logs" --exclude="storage/framework"
+          path: ./
+          remote_path: /home/xs501620/juku-map.jp/app/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_port: '10022'
+          remote_user: ${{ secrets.SSH_USERNAME }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Link public_html, run migrations, cache config
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
           port: 10022
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          local_path: './public/*'
-          remote_path: '/home/xs501620/juku-map.jp/public_html/'
-          sftp_only: false
-          delete_remote_files: false
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/xs501620/juku-map.jp
+            mkdir -p app/database app/storage/framework/cache app/storage/framework/sessions app/storage/framework/views app/storage/logs app/storage/app
+            touch app/database/database.sqlite
+            chmod -R 775 app/storage app/database
+            if [ ! -L public_html ] || [ "$(readlink -f public_html)" != "$(readlink -f app/public)" ]; then
+              rm -rf public_html
+              ln -s app/public public_html
+            fi
+            cd app
+            /opt/php-8.3.30/bin/php artisan migrate --force
+            /opt/php-8.3.30/bin/php artisan config:cache
+            /opt/php-8.3.30/bin/php artisan route:cache
+            /opt/php-8.3.30/bin/php artisan view:cache
