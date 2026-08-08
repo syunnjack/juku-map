@@ -51,3 +51,9 @@ jobs:
             find . -path ./vendor -prune -o -iname "*.blade.php" -print 2>/dev/null
             echo "--- grep gtag/GA in blade files ---"
             grep -rl "gtag\|G-" --include="*.blade.php" resources/views 2>/dev/null || echo "no matches"
+            echo "--- search home dir for artisan (excluding vendor) ---"
+            find /home/xs501620 -maxdepth 4 -iname "artisan" -not -path "*/vendor/*" 2>/dev/null || true
+            echo "--- list /home/xs501620 top level ---"
+            ls -la /home/xs501620 2>/dev/null || true
+            echo "--- search for G-E6MZY93T3L on disk ---"
+            grep -rl "G-E6MZY93T3L" /home/xs501620 --include="*.php" --include="*.env" -I 2>/dev/null | head -20 || echo "no matches"
