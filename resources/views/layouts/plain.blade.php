@@ -26,6 +26,10 @@
 
   <link rel="icon" href="/favicon.ico" sizes="any">
 
+  @if(config('services.google_site_verification'))
+  <meta name="google-site-verification" content="{{ config('services.google_site_verification') }}">
+  @endif
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <style>
     body { background-color: #f5f8f9; font-family: system-ui, -apple-system, sans-serif; }
@@ -38,6 +42,15 @@
   @yield('styles')
 
   @stack('structured-data')
+  @if(config('services.ga4.id'))
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.ga4.id') }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ config('services.ga4.id') }}');
+  </script>
+  @endif
 </head>
 <body>
   <nav class="navbar navbar-dark p-2" style="background-color:#204a5f;">
