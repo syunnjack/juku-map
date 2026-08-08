@@ -57,3 +57,29 @@ jobs:
             ls -la /home/xs501620 2>/dev/null || true
             echo "--- search for G-E6MZY93T3L on disk ---"
             grep -rl "G-E6MZY93T3L" /home/xs501620 --include="*.php" --include="*.env" -I 2>/dev/null | head -20 || echo "no matches"
+
+  inspect-app-dir:
+    runs-on: ubuntu-latest
+    needs: inspect
+    if: always()
+    steps:
+      - name: Inspect juku-map-app (Deployer-style) structure
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: 10022
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/xs501620/juku-map-app
+            echo "--- top level ---"
+            ls -la .
+            echo "--- current -> ? ---"
+            readlink -f current 2>/dev/null || echo "no 'current' symlink"
+            echo "--- shared dir ---"
+            ls -la shared 2>/dev/null || echo "no shared dir"
+            echo "--- shared/.env GA lines (if present) ---"
+            grep -E '^GA_MEASUREMENT_ID=|^GOOGLE_SITE_VERIFICATION=' shared/.env 2>/dev/null || echo "no shared/.env or no matching lines"
+            echo "--- current/.env GA lines (if present, may just be a symlink to shared) ---"
+            grep -E '^GA_MEASUREMENT_ID=|^GOOGLE_SITE_VERIFICATION=' current/.env 2>/dev/null || echo "no current/.env or no matching lines"
