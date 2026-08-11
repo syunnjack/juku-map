@@ -79,6 +79,7 @@ jobs:
             fi
             cd app
             /opt/php-8.3.30/bin/php artisan migrate --force
+            /opt/php-8.3.30/bin/php artisan db:seed --force
             /opt/php-8.3.30/bin/php artisan config:cache
             /opt/php-8.3.30/bin/php artisan route:cache
             /opt/php-8.3.30/bin/php artisan view:cache
