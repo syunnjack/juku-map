@@ -104,8 +104,25 @@ class VenueController extends Controller
 
     public function sitemap()
     {
-        $venues = Venue::select('id', 'updated_at')->get();
-        $xml = view('sitemap', compact('venues'))->render();
+        $venues = Venue::select('id', 'area', 'updated_at')->get();
+        $areas = Venue::whereNotNull('area')->distinct()->pluck('area');
+
+        $urls = collect();
+
+        // トップページ
+        $urls->push('<url><loc>' . url('/') . '</loc><changefreq>daily</changefreq><priority>1.0</priority></url>');
+
+        // エリア別ページ
+        foreach ($areas as $area) {
+            $urls->push('<url><loc>' . url('/areas/' . urlencode($area)) . '</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>');
+        }
+
+        // 個別塾ページ
+        foreach ($venues as $venue) {
+            $urls->push('<url><loc>' . url("/venues/{$venue->id}") . '</loc><lastmod>' . $venue->updated_at->toDateString() . '</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>');
+        }
+
+        $xml = view('sitemap', ['urls' => $urls])->render();
 
         return response($xml, 200)->header('Content-Type', 'application/xml');
     }

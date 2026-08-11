@@ -44,6 +44,18 @@
 
   <div id="map" data-venues="{{ $venues->map(fn ($v) => ['id' => $v->id, 'name' => $v->name, 'area' => $v->area, 'lat' => $v->lat, 'lng' => $v->lng])->toJson() }}" style="height: 360px;" class="rounded shadow-sm border mb-4"></div>
 
+  {{-- エリア別クイックリンク --}}
+  @if($areas->isNotEmpty())
+  <div class="mb-4">
+    <p class="small text-muted fw-bold mb-2">📍 エリアから探す</p>
+    <div class="d-flex flex-wrap gap-2">
+      @foreach($areas->take(20) as $area)
+      <a href="{{ route('areas.show', urlencode($area)) }}" class="btn btn-outline-secondary btn-sm">{{ $area }}</a>
+      @endforeach
+    </div>
+  </div>
+  @endif
+
   <form method="GET" action="{{ route('venues.index') }}" class="row g-2 mb-4">
     <div class="col-md-3">
       <label class="form-label">エリア</label>

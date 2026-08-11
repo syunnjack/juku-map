@@ -7,6 +7,7 @@ use App\Http\Controllers\LineLoginController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\AreaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [VenueController::class, 'index'])->name('venues.index');
@@ -24,7 +25,13 @@ Route::post('/venues/{venue}/document-request', [DocumentRequestController::clas
 Route::view('/thanks', 'venues.thanks')->name('venues.thanks');
 
 Route::view('/about', 'about')->name('about');
+Route::get('/areas/{area}', [AreaController::class, 'show'])->name('areas.show');
 Route::get('/sitemap.xml', [VenueController::class, 'sitemap'])->name('sitemap');
+
+Route::get('/robots.txt', function () {
+    $body = "User-agent: *\nAllow: /\n\nSitemap: " . url('/sitemap.xml') . "\n";
+    return response($body, 200, ['Content-Type' => 'text/plain']);
+});
 
 // LINE連携（お気に入り塾・教室の新着月謝口コミ通知／体験授業予約・資料請求受付）
 Route::get('/line/login', [LineLoginController::class, 'redirect'])->name('line.login');

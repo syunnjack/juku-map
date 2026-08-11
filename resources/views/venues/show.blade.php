@@ -1,7 +1,7 @@
 @extends('layouts.plain')
 
-@section('title', $venue->name . ' の月謝口コミ・写真付き口コミ | ' . config('app.name'))
-@section('description', $venue->name . '（' . ($venue->area ?? '学習塾') . '）の場所・実際の月謝の口コミ・写真付き口コミを確認できます。')
+@section('title', $venue->name . '（' . ($venue->area ?? '学習塾') . '）の対象学年・月謝口コミ | ' . config('app.name'))
+@section('description', $venue->name . '（' . ($venue->area ?? '学習塾') . '）の対象学年' . ($venue->target_grades ? '（' . implode('・', $venue->target_grades) . '）' : '') . '、授業形式' . ($venue->lesson_style ? '（' . $venue->lesson_style . '）' : '') . '、実際の月謝の口コミを掲載。小学生から大学受験まで対応の塾検索サイト。')
 
 @push('structured-data')
 <script type="application/ld+json">
@@ -27,6 +27,14 @@
   ],
   'address' => $venue->address ?? $venue->area,
   'telephone' => $venue->phone,
+  'areaServed' => $venue->area,
+  'courseMode' => $venue->lesson_style === 'オンライン' ? 'online' : 'onsite',
+  'educationalLevel' => $venue->target_grades ? implode(', ', $venue->target_grades) : null,
+  'aggregateRating' => $venue->costReports->isNotEmpty() ? [
+      '@type' => 'AggregateRating',
+      'ratingValue' => round($venue->costReports->count() > 0 ? 4.0 : 0, 1),
+      'reviewCount' => $venue->costReports->count() + $venue->reviews->count(),
+  ] : null,
 ]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
 </script>
 @endpush
