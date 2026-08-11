@@ -83,3 +83,9 @@ jobs:
             /opt/php-8.3.30/bin/php artisan config:cache
             /opt/php-8.3.30/bin/php artisan route:cache
             /opt/php-8.3.30/bin/php artisan view:cache
+
+      - name: Submit sitemap to Google and Bing
+        run: |
+          curl -fsS "https://www.google.com/ping?sitemap=https://juku-map.jp/sitemap.xml" || true
+          curl -fsS "https://www.bing.com/ping?sitemap=https://juku-map.jp/sitemap.xml" || true
+          echo "Sitemap submitted to Google and Bing"
