@@ -6,6 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Venue extends Model
 {
+    public const GRADE_OPTIONS = [
+        '小学生',
+        '中学生（中1〜中3）',
+        '高校生（高1〜高3）',
+        '大学受験・浪人生',
+    ];
+
+    public const LESSON_STYLE_OPTIONS = [
+        '個別指導',
+        '集団授業',
+        'オンライン',
+        '自立学習',
+    ];
+
     protected $fillable = [
         'name',
         'description',
@@ -15,6 +29,8 @@ class Venue extends Model
         'lat',
         'lng',
         'likes_count',
+        'target_grades',
+        'lesson_style',
     ];
 
     protected function casts(): array
@@ -22,6 +38,7 @@ class Venue extends Model
         return [
             'lat' => 'float',
             'lng' => 'float',
+            'target_grades' => 'array',
         ];
     }
 

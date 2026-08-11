@@ -16,6 +16,15 @@ class VenueController extends Controller
             $query->where('area', $request->input('area'));
         }
 
+        if ($request->filled('grade')) {
+            $grade = $request->input('grade');
+            $query->whereJsonContains('target_grades', $grade);
+        }
+
+        if ($request->filled('lesson_style')) {
+            $query->where('lesson_style', $request->input('lesson_style'));
+        }
+
         $venues = $query->latest()->get();
         $areas = Venue::query()->whereNotNull('area')->distinct()->pluck('area');
 
@@ -41,6 +50,9 @@ class VenueController extends Controller
             'phone' => 'nullable|string|max:20',
             'lat' => 'required|numeric|between:-90,90',
             'lng' => 'required|numeric|between:-180,180',
+            'target_grades' => 'nullable|array',
+            'target_grades.*' => 'string|in:' . implode(',', Venue::GRADE_OPTIONS),
+            'lesson_style' => 'nullable|string|in:' . implode(',', Venue::LESSON_STYLE_OPTIONS),
         ]);
 
         if (ContentModeration::containsNgWord($validated['name'] . ' ' . ($validated['description'] ?? ''))) {

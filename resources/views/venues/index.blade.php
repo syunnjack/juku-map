@@ -1,7 +1,7 @@
 @extends('layouts.plain')
 
-@section('title', config('app.name') . ' | 現在地から探す・実際の月謝がわかる学習塾マップ')
-@section('description', '全国の学習塾・個別指導塾を地図から検索できる投稿型マップです。現在地から近い教室をワンタップで見つけられ、実際の月謝・費用の口コミや写真付き口コミをリアルタイムで確認できます。')
+@section('title', config('app.name') . ' | 小学生〜大学受験まで対応の学習塾マップ')
+@section('description', '全国の学習塾・個別指導塾を地図から検索。小学生・中学生・高校生・大学受験生まで対応。現在地から近い教室をすぐ見つけられ、実際の月謝・費用の口コミをリアルタイムで確認できます。')
 
 @push('structured-data')
 <script type="application/ld+json">
@@ -33,7 +33,7 @@
 <div class="container my-4">
   <div class="text-center mb-4">
     <h1 class="fw-bold h3">✏️ 学習塾マップ</h1>
-    <p class="text-muted">現在地から近い教室をすぐ見つける・実際の月謝がわかる地図</p>
+    <p class="text-muted">小学生〜大学受験まで対応 | 現在地から近い教室をすぐ見つける・実際の月謝がわかる地図</p>
     <a href="{{ route('venues.create') }}" class="btn btn-juku shadow-sm px-4">➕ 学習塾・個別指導塾を投稿</a>
   </div>
 
@@ -45,7 +45,7 @@
   <div id="map" data-venues="{{ $venues->map(fn ($v) => ['id' => $v->id, 'name' => $v->name, 'area' => $v->area, 'lat' => $v->lat, 'lng' => $v->lng])->toJson() }}" style="height: 360px;" class="rounded shadow-sm border mb-4"></div>
 
   <form method="GET" action="{{ route('venues.index') }}" class="row g-2 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <label class="form-label">エリア</label>
       <select name="area" class="form-select">
         <option value="">すべて</option>
@@ -54,9 +54,32 @@
         @endforeach
       </select>
     </div>
+    <div class="col-md-3">
+      <label class="form-label">対象学年</label>
+      <select name="grade" class="form-select">
+        <option value="">すべて</option>
+        @foreach(\App\Models\Venue::GRADE_OPTIONS as $grade)
+          <option value="{{ $grade }}" @selected(request('grade') == $grade)>{{ $grade }}</option>
+        @endforeach
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">授業形式</label>
+      <select name="lesson_style" class="form-select">
+        <option value="">すべて</option>
+        @foreach(\App\Models\Venue::LESSON_STYLE_OPTIONS as $style)
+          <option value="{{ $style }}" @selected(request('lesson_style') == $style)>{{ $style }}</option>
+        @endforeach
+      </select>
+    </div>
     <div class="col-md-2 align-self-end">
       <button type="submit" class="btn btn-outline-primary w-100">絞り込む</button>
     </div>
+    @if(request()->hasAny(['area','grade','lesson_style']))
+      <div class="col-md-1 align-self-end">
+        <a href="{{ route('venues.index') }}" class="btn btn-outline-secondary w-100">クリア</a>
+      </div>
+    @endif
   </form>
 
   <div class="row" id="venueList">
@@ -68,6 +91,16 @@
               <a href="{{ route('venues.show', $venue) }}" class="text-decoration-none">{{ $venue->name }}</a>
               <span class="badge bg-secondary float-end">{{ $venue->area ?? '未設定' }}</span>
             </h2>
+            @if($venue->target_grades)
+              <div class="mb-1">
+                @foreach($venue->target_grades as $grade)
+                  <span class="badge {{ str_contains($grade, '大学受験') ? 'bg-danger' : (str_contains($grade, '高校') ? 'bg-warning text-dark' : (str_contains($grade, '中学') ? 'bg-primary' : 'bg-success')) }} me-1" style="font-size:0.7rem">{{ $grade }}</span>
+                @endforeach
+              </div>
+            @endif
+            @if($venue->lesson_style)
+              <span class="badge bg-light text-dark border me-1 mb-1" style="font-size:0.7rem">{{ $venue->lesson_style }}</span>
+            @endif
             <p class="card-text text-muted small">{{ $venue->description }}</p>
             <small class="text-muted d-block">
               @if($venue->cost_reports_avg_monthly_fee)

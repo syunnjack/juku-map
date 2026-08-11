@@ -27,6 +27,29 @@
     </div>
 
     <div class="mb-3">
+      <label class="form-label">対象学年（該当するものをすべて選択）</label>
+      <div class="d-flex flex-wrap gap-2">
+        @foreach(\App\Models\Venue::GRADE_OPTIONS as $grade)
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="target_grades[]" id="grade_{{ $loop->index }}" value="{{ $grade }}"
+              @checked(is_array(old('target_grades')) && in_array($grade, old('target_grades')))>
+            <label class="form-check-label" for="grade_{{ $loop->index }}">{{ $grade }}</label>
+          </div>
+        @endforeach
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">授業形式</label>
+      <select name="lesson_style" class="form-select">
+        <option value="">未記入</option>
+        @foreach(\App\Models\Venue::LESSON_STYLE_OPTIONS as $style)
+          <option value="{{ $style }}" @selected(old('lesson_style') === $style)>{{ $style }}</option>
+        @endforeach
+      </select>
+    </div>
+
+    <div class="mb-3">
       <label class="form-label">教室名 <span class="text-danger">*</span></label>
       <input type="text" name="name" value="{{ old('name') }}" class="form-control" required>
     </div>

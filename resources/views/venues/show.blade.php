@@ -44,7 +44,19 @@
         <p class="text-secondary small mb-1">住所: {{ $venue->address }}</p>
       @endif
       @if($venue->phone)
-        <p class="text-secondary small mb-4">電話: {{ $venue->phone }}</p>
+        <p class="text-secondary small mb-1">電話: {{ $venue->phone }}</p>
+      @endif
+      @if($venue->target_grades)
+        <p class="text-secondary small mb-1">対象学年:
+          @foreach($venue->target_grades as $grade)
+            <span class="badge {{ str_contains($grade, '大学受験') ? 'bg-danger' : (str_contains($grade, '高校') ? 'bg-warning text-dark' : (str_contains($grade, '中学') ? 'bg-primary' : 'bg-success')) }} me-1">{{ $grade }}</span>
+          @endforeach
+        </p>
+      @endif
+      @if($venue->lesson_style)
+        <p class="text-secondary small mb-4">授業形式: <span class="badge bg-light text-dark border">{{ $venue->lesson_style }}</span></p>
+      @else
+        <div class="mb-4"></div>
       @endif
 
       <div class="mb-3">

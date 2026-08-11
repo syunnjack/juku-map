@@ -1,6 +1,7 @@
 @extends('layouts.plain')
 
-@section('title', 'このサイトについて | ' . config('app.name'))
+@section('title', '塾マップとは - 小学生〜大学受験対応の学習塾比較 | ' . config('app.name'))
+@section('description', '小学生から大学受験生まで対応。地域密着の学習塾比較サイト「塾マップ」のサービス説明ページです。')
 @section('description', config('app.name') . 'の運営方針、データの取り扱い、口コミ・LINE通知・体験授業予約受付の仕組みについて説明しています。')
 
 @section('content')
