@@ -30,11 +30,6 @@
   'areaServed' => $venue->area,
   'courseMode' => $venue->lesson_style === 'オンライン' ? 'online' : 'onsite',
   'educationalLevel' => $venue->target_grades ? implode(', ', $venue->target_grades) : null,
-  'aggregateRating' => $venue->costReports->isNotEmpty() ? [
-      '@type' => 'AggregateRating',
-      'ratingValue' => round($venue->costReports->count() > 0 ? 4.0 : 0, 1),
-      'reviewCount' => $venue->costReports->count() + $venue->reviews->count(),
-  ] : null,
 ]), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
 </script>
 @endpush
@@ -46,13 +41,32 @@
       <h1 class="h3 fw-bold mb-3">{{ $venue->name }}</h1>
       <p class="text-muted mb-2">{{ $venue->description }}</p>
       @if($venue->area)
-        <p class="text-secondary small mb-1">エリア: {{ $venue->area }}</p>
+        <p class="text-secondary small mb-1">
+          エリア:
+          @if($venue->area_slug)
+            <a href="{{ route('areas.show', $venue->area_slug) }}">{{ $venue->area }}</a>
+          @else
+            {{ $venue->area }}
+          @endif
+          @if($venue->city && $venue->city !== $venue->area) {{ $venue->city }} @endif
+        </p>
+      @endif
+      @if($venue->operator)
+        <p class="text-secondary small mb-1">運営: {{ $venue->operator }}</p>
       @endif
       @if($venue->address)
         <p class="text-secondary small mb-1">住所: {{ $venue->address }}</p>
       @endif
       @if($venue->phone)
         <p class="text-secondary small mb-1">電話: {{ $venue->phone }}</p>
+      @endif
+      @if($venue->opening_hours)
+        <p class="text-secondary small mb-1">開講時間（OpenStreetMapの記載）: {{ $venue->opening_hours }}</p>
+      @endif
+      @if($venue->website)
+        <p class="text-secondary small mb-1">
+          公式サイト: <a href="{{ $venue->website }}" rel="nofollow noopener" target="_blank">{{ $venue->website }}</a>
+        </p>
       @endif
       @if($venue->target_grades)
         <p class="text-secondary small mb-1">対象学年:
@@ -62,7 +76,17 @@
         </p>
       @endif
       @if($venue->lesson_style)
-        <p class="text-secondary small mb-4">授業形式: <span class="badge bg-light text-dark border">{{ $venue->lesson_style }}</span></p>
+        <p class="text-secondary small mb-3">授業形式: <span class="badge bg-light text-dark border">{{ $venue->lesson_style }}</span></p>
+      @endif
+
+      @if($venue->is_from_osm)
+        <div class="alert alert-light border small mt-3 mb-4">
+          この教室の名称・場所は
+          <a href="https://www.openstreetmap.org/{{ $venue->source_ref }}" rel="nofollow noopener" target="_blank">OpenStreetMap</a>
+          のデータ（&copy; OpenStreetMap contributors、ODbL 1.0）をもとに掲載しています。
+          対象学年・授業形式・月謝は利用者の投稿で、当サイトでは内容を確認していません。
+          コース・料金・開講状況は変わることがあるため、お問い合わせの前に各教室へ直接ご確認ください。
+        </div>
       @else
         <div class="mb-4"></div>
       @endif

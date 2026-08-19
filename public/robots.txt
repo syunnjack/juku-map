@@ -1,4 +1,0 @@
-User-agent: *
-Disallow:
-
-Sitemap: https://juku-map.example.com/sitemap.xml

@@ -1,14 +1,14 @@
 name: Deploy to Xserver
 
-# 手動実行のみ。
+# 公開先は juku-map.net。
 #
-# juku-map.jp を実際に配信しているのは WordPress で、このリポジトリの
-# Laravel アプリではない（DNSの向き先も、Laravelを置いている Xserver とは
-# 別のサーバになっている）。それなのに push のたびに本番サーバへ
-# rsync --delete と public_html の作り直しが走るのは危ない。
-#
-# 動かすときは Actions の画面から手で実行する。
+# 以前は juku-map.jp を本番として設定していたが、あのドメインは
+# 別の会社（Skrrs株式会社）が WordPress で運用しているサイトで、
+# こちらの持ち物ではなかった。IndexNow の通知先まで向いていたので、
+# すべて juku-map.net に付け替えた。
 on:
+  push:
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
           APP_ENV=production
           APP_KEY=${{ secrets.APP_KEY }}
           APP_DEBUG=false
-          APP_URL=https://juku-map.jp
+          APP_URL=https://juku-map.net
           APP_LOCALE=ja
           APP_FALLBACK_LOCALE=ja
           DB_CONNECTION=sqlite
@@ -52,7 +52,7 @@ jobs:
           SESSION_DRIVER=file
           QUEUE_CONNECTION=sync
           GA_MEASUREMENT_ID=G-P4QF8RP681
-          GOOGLE_SITE_VERIFICATION=LxeT7qSUXM5ZrB1Pkz_a0RgqP03pxgTtwpqz3_gXyOI
+          GOOGLE_SITE_VERIFICATION=jgHzKX_4sGEOJKTKPCk1nSdASC55X77NWvJJ-6U0Y3s
           EOF
 
       - name: Deploy app via rsync over SSH
@@ -60,7 +60,7 @@ jobs:
         with:
           switches: -avzr --delete --exclude=".git" --exclude=".github" --exclude="node_modules" --exclude="tests" --exclude="database/database.sqlite" --exclude="storage/app" --exclude="storage/logs" --exclude="storage/framework"
           path: ./
-          remote_path: /home/xs501620/juku-map.jp/app/
+          remote_path: /home/xs501620/juku-map.net/app/
           remote_host: ${{ secrets.SSH_HOST }}
           remote_port: '10022'
           remote_user: ${{ secrets.SSH_USERNAME }}
@@ -75,7 +75,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd /home/xs501620/juku-map.jp
+            cd /home/xs501620/juku-map.net
             mkdir -p app/database app/storage/framework/cache app/storage/framework/sessions app/storage/framework/views app/storage/logs app/storage/app
             touch app/database/database.sqlite
             chmod -R 775 app/storage app/database
@@ -94,7 +94,7 @@ jobs:
             fi
             cd app
             /opt/php-8.3.30/bin/php artisan migrate --force
-            /opt/php-8.3.30/bin/php artisan db:seed --force 2>&1 || echo "Seeder warning (non-fatal)"
+            /opt/php-8.3.30/bin/php -d memory_limit=512M artisan db:seed --class=OsmJukuSeeder --force
             /opt/php-8.3.30/bin/php artisan config:cache
             /opt/php-8.3.30/bin/php artisan route:cache
             /opt/php-8.3.30/bin/php artisan view:cache
@@ -103,5 +103,5 @@ jobs:
         run: |
           curl -fsS -X POST "https://api.indexnow.org/indexnow" \
             -H "Content-Type: application/json; charset=utf-8" \
-            -d '{"host":"juku-map.jp","key":"jukumap2026","keyLocation":"https://juku-map.jp/jukumap2026.txt","urlList":["https://juku-map.jp/"]}' || true
+            -d '{"host":"juku-map.net","key":"jukumap2026","keyLocation":"https://juku-map.net/jukumap2026.txt","urlList":["https://juku-map.net/"]}' || true
           echo "IndexNow notified"

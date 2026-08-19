@@ -8,27 +8,56 @@ use Illuminate\Http\Request;
 
 class VenueController extends Controller
 {
+    /** 1ページに載せる教室の数。 */
+    private const PER_PAGE = 60;
+
     public function index(Request $request)
     {
-        $query = Venue::query()->withAvg('costReports', 'monthly_fee');
-
+        // 旧URL（/?area=東京都）は都道府県ページへ送る。
         if ($request->filled('area')) {
-            $query->where('area', $request->input('area'));
+            $slug = Venue::slugForArea((string) $request->input('area'));
+
+            if ($slug !== null) {
+                return redirect()->route('areas.show', ['area' => $slug], 301);
+            }
         }
 
-        if ($request->filled('grade')) {
-            $grade = $request->input('grade');
-            $query->whereJsonContains('target_grades', $grade);
-        }
+        $venues = $this->filtered($request)->latest()->paginate(self::PER_PAGE)->withQueryString();
 
-        if ($request->filled('lesson_style')) {
-            $query->where('lesson_style', $request->input('lesson_style'));
-        }
+        return view('venues.index', [
+            'venues' => $venues,
+            'areaCounts' => $this->areaCounts(),
+            'area' => null,
+            'areaSlug' => null,
+            'total' => Venue::count(),
+        ]);
+    }
 
-        $venues = $query->latest()->get();
-        $areas = Venue::query()->whereNotNull('area')->distinct()->pluck('area');
+    /** 対象学年・授業形式での絞り込み。どちらも利用者の投稿がある教室にだけ入っている。 */
+    private function filtered(Request $request)
+    {
+        return Venue::query()
+            ->withAvg('costReports', 'monthly_fee')
+            ->when($request->filled('grade'), fn ($query) => $query->whereJsonContains('target_grades', $request->input('grade')))
+            ->when($request->filled('lesson_style'), fn ($query) => $query->where('lesson_style', $request->input('lesson_style')));
+    }
 
-        return view('venues.index', compact('venues', 'areas'));
+    /** 都道府県ごとの掲載件数（多い順）。 */
+    private function areaCounts()
+    {
+        return Venue::query()
+            ->selectRaw('area, COUNT(*) as total')
+            ->whereNotNull('area')
+            ->groupBy('area')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'area' => $row->area,
+                'slug' => Venue::slugForArea($row->area),
+                'total' => (int) $row->total,
+            ])
+            ->filter(fn (array $row) => $row['slug'] !== null)
+            ->values();
     }
 
     public function create()
@@ -109,12 +138,19 @@ class VenueController extends Controller
 
         $urls = collect();
 
+
         // トップページ
         $urls->push('<url><loc>' . url('/') . '</loc><changefreq>daily</changefreq><priority>1.0</priority></url>');
 
-        // エリア別ページ
+        // エリア別ページ（URLはローマ字。日本語のままだと %E6%9D%B1... になる）
         foreach ($areas as $area) {
-            $urls->push('<url><loc>' . url('/areas/' . urlencode($area)) . '</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>');
+            $slug = Venue::slugForArea($area);
+
+            if ($slug === null) {
+                continue;
+            }
+
+            $urls->push('<url><loc>' . route('areas.show', $slug) . '</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>');
         }
 
         // 個別塾ページ

@@ -1,7 +1,17 @@
 @extends('layouts.plain')
 
-@section('title', config('app.name') . ' | 小学生〜大学受験まで対応の学習塾マップ')
-@section('description', '全国の学習塾・個別指導塾を地図から検索。小学生・中学生・高校生・大学受験生まで対応。現在地から近い教室をすぐ見つけられ、実際の月謝・費用の口コミをリアルタイムで確認できます。')
+@php
+    $pageHeading = $area ? $area . 'の学習塾・予備校' : '学習塾マップ';
+    $pageTitle = $area
+        ? $pageHeading . number_format($total) . '件｜' . config('app.name')
+        : config('app.name') . ' | 小学生〜大学受験まで対応の学習塾マップ';
+    $pageDescription = $area
+        ? $area . 'の学習塾・個別指導塾・予備校' . number_format($total) . '件を地図と一覧から探せます。月謝の口コミは利用者の投稿です。'
+        : '全国' . number_format($total) . '件の学習塾・個別指導塾・予備校を地図から検索。現在地から近い教室をすぐ見つけられ、実際の月謝の口コミを確認できます。';
+@endphp
+
+@section('title', $pageTitle)
+@section('description', $pageDescription)
 
 @push('structured-data')
 <script type="application/ld+json">
@@ -42,30 +52,33 @@
   </div>
   <p id="locateMessage" class="text-center text-muted small mb-3"></p>
 
-  <div id="map" data-venues="{{ $venues->map(fn ($v) => ['id' => $v->id, 'name' => $v->name, 'area' => $v->area, 'lat' => $v->lat, 'lng' => $v->lng])->toJson() }}" style="height: 360px;" class="rounded shadow-sm border mb-4"></div>
+  @php
+      $mapVenues = $venues->getCollection()->map(fn ($v) => [
+          'id' => $v->id, 'name' => $v->name, 'area' => $v->area, 'lat' => $v->lat, 'lng' => $v->lng,
+      ])->values();
+  @endphp
+  <div id="map" data-venues="{{ $mapVenues->toJson() }}" style="height: 360px;" class="rounded shadow-sm border mb-4"></div>
 
-  {{-- エリア別クイックリンク --}}
-  @if($areas->isNotEmpty())
-  <div class="mb-4">
-    <p class="small text-muted fw-bold mb-2">📍 エリアから探す</p>
-    <div class="d-flex flex-wrap gap-2">
-      @foreach($areas->take(20) as $area)
-      <a href="{{ route('areas.show', urlencode($area)) }}" class="btn btn-outline-secondary btn-sm">{{ $area }}</a>
-      @endforeach
-    </div>
-  </div>
+  @if($area)
+    <nav aria-label="パンくず" class="small mb-3">
+      <a href="{{ route('venues.index') }}">学習塾マップ</a>
+      <span class="text-muted mx-1">/</span><span class="text-muted">{{ $area }}</span>
+    </nav>
   @endif
 
-  <form method="GET" action="{{ route('venues.index') }}" class="row g-2 mb-4">
-    <div class="col-md-3">
-      <label class="form-label">エリア</label>
-      <select name="area" class="form-select">
-        <option value="">すべて</option>
-        @foreach($areas as $area)
-          <option value="{{ $area }}" @selected(request('area') == $area)>{{ $area }}</option>
-        @endforeach
-      </select>
-    </div>
+  @if($areaCounts->isNotEmpty())
+    <h2 class="h6">都道府県から探す</h2>
+    <p class="d-flex flex-wrap gap-2 mb-4">
+      @foreach($areaCounts as $row)
+        <a href="{{ route('areas.show', $row['slug']) }}"
+           class="btn btn-sm {{ $areaSlug === $row['slug'] ? 'btn-primary' : 'btn-outline-secondary' }}">
+          {{ $row['area'] }} <span class="text-muted">{{ number_format($row['total']) }}</span>
+        </a>
+      @endforeach
+    </p>
+  @endif
+
+  <form method="GET" action="{{ $areaSlug ? route('areas.show', $areaSlug) : route('venues.index') }}" class="row g-2 mb-4">
     <div class="col-md-3">
       <label class="form-label">対象学年</label>
       <select name="grade" class="form-select">
@@ -87,12 +100,17 @@
     <div class="col-md-2 align-self-end">
       <button type="submit" class="btn btn-outline-primary w-100">絞り込む</button>
     </div>
-    @if(request()->hasAny(['area','grade','lesson_style']))
+    @if(request()->hasAny(['grade','lesson_style']))
       <div class="col-md-1 align-self-end">
         <a href="{{ route('venues.index') }}" class="btn btn-outline-secondary w-100">クリア</a>
       </div>
     @endif
   </form>
+
+  <p class="text-muted small">
+    {{ number_format($total) }}件のうち
+    {{ number_format($venues->firstItem() ?? 0) }}〜{{ number_format($venues->lastItem() ?? 0) }}件目を表示しています。
+  </p>
 
   <div class="row" id="venueList">
     @forelse($venues as $venue)
@@ -129,6 +147,16 @@
       <p class="text-muted">該当する学習塾・個別指導塾がありません。</p>
     @endforelse
   </div>
+
+  <div class="d-flex justify-content-center my-3">
+    {{ $venues->onEachSide(1)->links() }}
+  </div>
+
+  <p class="text-muted small">
+    教室の名称・場所・電話番号は OpenStreetMap のデータ（&copy; OpenStreetMap contributors、ODbL 1.0）をもとにしています。
+    対象学年・授業形式・月謝は、利用者が投稿した教室にのみ表示されます。金額は学年・コース・季節講習の有無で大きく変わり、
+    当サイトでは内容を確認していません。お問い合わせの前に各教室へ直接ご確認ください。
+  </p>
 </div>
 @endsection
 

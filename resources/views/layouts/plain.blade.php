@@ -11,13 +11,26 @@
 
   <title>@yield('title', config('app.name') . ' | 小学生〜大学受験まで対応の学習塾マップ')</title>
   <meta name="description" content="@yield('description', '全国の学習塾・個別指導塾を地図から検索。小学生・中学生・高校生・大学受験生まで対応。現在地から近い教室をすぐ見つけられ、実際の月謝・費用の口コミをリアルタイムで確認できます。')">
-  <link rel="canonical" href="{{ url()->current() }}">
+  @php
+      // url()->current() はクエリを落とすため、2ページ目以降が1ページ目を
+      // 正規URLとして申告してしまう。内容が変わる page だけを残す。
+      $canonicalQuery = array_filter(request()->only(['page']), fn ($value) => $value !== null && $value !== '' && $value !== '1');
+      $canonicalUrl = url()->current() . ($canonicalQuery ? '?' . http_build_query($canonicalQuery) : '');
+
+      // 学年・授業形式での絞り込みは同じ内容の並べ替えに近く、検索結果に
+      // 何通りも出す意味が無い。リンクはたどってほしいので follow は残す。
+      $isNoindex = request()->hasAny(['grade', 'lesson_style']);
+  @endphp
+  @if ($isNoindex)
+  <meta name="robots" content="noindex,follow">
+  @endif
+  <link rel="canonical" href="{{ $canonicalUrl }}">
 
   <meta property="og:site_name" content="{{ config('app.name') }}">
   <meta property="og:type" content="website">
   <meta property="og:title" content="@yield('title', config('app.name') . ' | 現在地から探す・実際の月謝がわかる学習塾マップ')">
   <meta property="og:description" content="@yield('description', '全国の学習塾・個別指導塾を地図から探せる投稿型マップです。現在地から近い教室をすぐ見つけられ、実際の月謝・費用の口コミや写真付き口コミをリアルタイムで確認できます。')">
-  <meta property="og:url" content="{{ url()->current() }}">
+  <meta property="og:url" content="{{ $canonicalUrl }}">
   <meta property="og:locale" content="ja_JP">
 
   <meta name="twitter:card" content="summary">

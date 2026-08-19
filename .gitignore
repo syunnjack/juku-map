@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# 取得スクリプトの一時キャッシュ
+/scripts/.cache
