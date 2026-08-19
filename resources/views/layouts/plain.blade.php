@@ -21,8 +21,12 @@
       // 何通りも出す意味が無い。リンクはたどってほしいので follow は残す。
       $isNoindex = request()->hasAny(['grade', 'lesson_style']);
   @endphp
-  @if ($isNoindex)
-  <meta name="robots" content="noindex,follow">
+  @php
+      // 個別ページ側から noindex を指定できるようにする
+      $pageRobots = trim($__env->yieldContent('robots'));
+  @endphp
+  @if ($isNoindex || $pageRobots)
+  <meta name="robots" content="{{ $pageRobots ?: 'noindex,follow' }}">
   @endif
   <link rel="canonical" href="{{ $canonicalUrl }}">
 

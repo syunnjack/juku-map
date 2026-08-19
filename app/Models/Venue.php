@@ -46,6 +46,33 @@ class Venue extends Model
         return array_search($slug, self::AREA_SLUGS, true) ?: null;
     }
 
+    /** 「三重県四日市市 富田栄町」のような、場所を表す短い文字列。 */
+    public function getPlaceLabelAttribute(): string
+    {
+        $parts = array_filter([
+            $this->area,
+            $this->city && $this->city !== $this->area ? $this->city : null,
+        ]);
+
+        $label = implode('', $parts);
+
+        return $this->town ? trim($label.' '.$this->town) : $label;
+    }
+
+    /**
+     * 検索結果に出す価値があるページか。
+     *
+     * 名前と座標しか無い教室は、同名のページが何十枚も並ぶだけになる。
+     * 連絡先などの手がかりが1つでもあるものを対象にする
+     * （一覧からはどちらもたどれる）。
+     */
+    public function getIsDetailedAttribute(): bool
+    {
+        return (bool) ($this->address || $this->phone || $this->website
+            || $this->opening_hours || $this->operator || $this->description
+            || $this->target_grades || $this->lesson_style);
+    }
+
     public function getAreaSlugAttribute(): ?string
     {
         return self::slugForArea($this->area);
@@ -62,6 +89,7 @@ class Venue extends Model
         'description',
         'area',
         'city',
+        'town',
         'operator',
         'website',
         'opening_hours',

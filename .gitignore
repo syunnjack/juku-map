@@ -25,3 +25,6 @@ Thumbs.db
 
 # 取得スクリプトの一時キャッシュ
 /scripts/.cache
+
+# 逆ジオコーディングの結果（再取得できる）
+/scripts/.geocache.json

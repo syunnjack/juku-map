@@ -119,7 +119,7 @@
           <div class="card-body">
             <h2 class="h6 card-title">
               <a href="{{ route('venues.show', $venue) }}" class="text-decoration-none">{{ $venue->name }}</a>
-              <span class="badge bg-secondary float-end">{{ $venue->area ?? '未設定' }}</span>
+              <span class="badge bg-secondary float-end">{{ $venue->city ?: ($venue->area ?? '未設定') }}</span>
             </h2>
             @if($venue->target_grades)
               <div class="mb-1">
@@ -131,7 +131,10 @@
             @if($venue->lesson_style)
               <span class="badge bg-light text-dark border me-1 mb-1" style="font-size:0.7rem">{{ $venue->lesson_style }}</span>
             @endif
-            <p class="card-text text-muted small">{{ $venue->description }}</p>
+            <p class="card-text text-muted small mb-1">{{ $venue->place_label }}</p>
+            @if($venue->description)
+              <p class="card-text text-muted small">{{ $venue->description }}</p>
+            @endif
             <small class="text-muted d-block">
               @if($venue->cost_reports_avg_monthly_fee)
                 平均月謝：約{{ number_format((int) round($venue->cost_reports_avg_monthly_fee)) }}円

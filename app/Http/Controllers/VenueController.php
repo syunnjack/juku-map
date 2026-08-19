@@ -133,7 +133,13 @@ class VenueController extends Controller
 
     public function sitemap()
     {
-        $venues = Venue::select('id', 'area', 'updated_at')->get();
+        // 名前と座標しか無い教室は、同名のページが何十枚も並ぶだけなので
+        // サイトマップには載せない（一覧からはたどれる）。
+        $venues = Venue::select('id', 'area', 'updated_at', 'address', 'phone', 'website',
+            'opening_hours', 'operator', 'description', 'target_grades', 'lesson_style')
+            ->get()
+            ->filter(fn (Venue $venue) => $venue->is_detailed)
+            ->values();
         $areas = Venue::whereNotNull('area')->distinct()->pluck('area');
 
         $urls = collect();

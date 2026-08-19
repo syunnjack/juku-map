@@ -46,6 +46,7 @@ class OsmJukuSeeder extends Seeder
                     'name' => $school['name'],
                     'area' => $school['area'],
                     'city' => $school['city'],
+                    'town' => $school['town'] ?? null,
                     'operator' => $school['operator'],
                     'address' => $school['address'],
                     'phone' => $school['phone'],
@@ -64,7 +65,7 @@ class OsmJukuSeeder extends Seeder
                 $rows,
                 ['source', 'source_ref'],
                 [
-                    'name', 'area', 'city', 'operator', 'address', 'phone',
+                    'name', 'area', 'city', 'town', 'operator', 'address', 'phone',
                     'website', 'opening_hours', 'lat', 'lng', 'updated_at',
                 ]
             );

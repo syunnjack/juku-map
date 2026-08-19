@@ -1,7 +1,9 @@
 @extends('layouts.plain')
 
-@section('title', $venue->name . '（' . ($venue->area ?? '学習塾') . '）の対象学年・月謝口コミ | ' . config('app.name'))
-@section('description', $venue->name . '（' . ($venue->area ?? '学習塾') . '）の対象学年' . ($venue->target_grades ? '（' . implode('・', $venue->target_grades) . '）' : '') . '、授業形式' . ($venue->lesson_style ? '（' . $venue->lesson_style . '）' : '') . '、実際の月謝の口コミを掲載。小学生から大学受験まで対応の塾検索サイト。')
+@section('robots', $venue->is_detailed ? '' : 'noindex,follow')
+
+@section('title', $venue->name.'（'.$venue->place_label.'）の場所と連絡先 | '.config('app.name'))
+@section('description', $venue->name.'は'.$venue->place_label.'にある学習塾・予備校です。場所・連絡先と、利用者が投稿した月謝の口コミを掲載しています。')
 
 @push('structured-data')
 <script type="application/ld+json">
@@ -40,6 +42,7 @@
     <div class="card-body p-4">
       <h1 class="h3 fw-bold mb-3">{{ $venue->name }}</h1>
       <p class="text-muted mb-2">{{ $venue->description }}</p>
+      <p class="text-secondary small mb-1">所在地: {{ $venue->place_label }}</p>
       @if($venue->area)
         <p class="text-secondary small mb-1">
           エリア:
