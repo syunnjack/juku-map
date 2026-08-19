@@ -1,8 +1,14 @@
 name: Deploy to Xserver
 
+# 手動実行のみ。
+#
+# juku-map.jp を実際に配信しているのは WordPress で、このリポジトリの
+# Laravel アプリではない（DNSの向き先も、Laravelを置いている Xserver とは
+# 別のサーバになっている）。それなのに push のたびに本番サーバへ
+# rsync --delete と public_html の作り直しが走るのは危ない。
+#
+# 動かすときは Actions の画面から手で実行する。
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -73,8 +79,17 @@ jobs:
             mkdir -p app/database app/storage/framework/cache app/storage/framework/sessions app/storage/framework/views app/storage/logs app/storage/app
             touch app/database/database.sqlite
             chmod -R 775 app/storage app/database
+            # public_html が実体のディレクトリだった場合、以前はここで
+            # rm -rf していた。中に別のサイト（WordPress など）が入っていたら
+            # 丸ごと消えてしまうので、消さずに中断する。
+            if [ -e public_html ] && [ ! -L public_html ]; then
+              echo "public_html がシンボリックリンクではありません。中身を消す恐れがあるため中断します。" >&2
+              ls -la public_html | head -20 >&2
+              exit 1
+            fi
+
             if [ ! -L public_html ] || [ "$(readlink -f public_html)" != "$(readlink -f app/public)" ]; then
-              rm -rf public_html
+              rm -f public_html
               ln -s app/public public_html
             fi
             cd app
