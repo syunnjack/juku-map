@@ -1,0 +1,48 @@
+# juku-map.jp（WordPress）が置かれているサーバへ、いまの鍵で入れるかどうかを見るだけの確認用。
+#
+# このリポジトリの Laravel アプリは Xserver（85.131.221.80）に置かれているが、
+# juku-map.jp のDNSは別のサーバ（162.43.122.86）を向いている。
+# WordPress を直すには、そちらに入れる必要がある。
+#
+# 何も書き換えない。接続できたかどうかだけを、ステップの成否として残す。
+# 鍵やユーザー名は出力しない。
+name: WP host probe
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/probe_key
+          chmod 600 ~/.ssh/probe_key
+
+      - name: SSH to juku-map.jp on port 10022
+        run: |
+          ssh -i ~/.ssh/probe_key -p 10022 -o BatchMode=yes -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=15 "${{ secrets.SSH_USERNAME }}@juku-map.jp" \
+            'echo connected; pwd; ls -1 | head -20'
+
+      - name: SSH to juku-map.jp on port 22
+        if: always()
+        run: |
+          ssh -i ~/.ssh/probe_key -p 22 -o BatchMode=yes -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=15 "${{ secrets.SSH_USERNAME }}@juku-map.jp" \
+            'echo connected; pwd; ls -1 | head -20'
+
+      - name: SSH to the Xserver host and look for a WordPress install
+        if: always()
+        run: |
+          ssh -i ~/.ssh/probe_key -p 10022 -o BatchMode=yes -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=15 "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" \
+            'ls -la ~/juku-map.jp; find ~ -maxdepth 4 -name wp-config.php 2>/dev/null | head'
+
+      - name: Clean up key
+        if: always()
+        run: rm -f ~/.ssh/probe_key
